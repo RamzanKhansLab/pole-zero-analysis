@@ -242,6 +242,65 @@
             background-color: #334155;
             color: var(--text-main);
         }
+    .site-footer {
+        width: 100%;
+        max-width: 1150px;
+        margin-top: 30px;
+        padding: 28px 20px 20px;
+        box-sizing: border-box;
+        text-align: center;
+        border-top: 1px solid #334155;
+        color: var(--text-muted);
+    }
+
+    .footer-brand {
+        color: var(--text-main);
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    .footer-subtitle {
+        margin-top: 5px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .footer-credits {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        margin-top: 18px;
+        font-size: 0.82rem;
+    }
+
+    .footer-credits strong {
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .footer-copyright {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #1e293b;
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+
+    @media (max-width: 600px) {
+        .site-footer {
+            margin-top: 20px;
+            padding: 24px 15px 18px;
+        }
+
+        .footer-credits {
+            flex-direction: column;
+            gap: 7px;
+        }
+    }
+
+
     </style>
 </head>
 <body>
@@ -790,4 +849,11 @@
 </script>
 
 </body>
+<footer class="site-footer">
+    <div class="footer-brand">Universal Filter Designer</div>
+    <div class="footer-subtitle">Conjugate-Aware Digital Filter Analysis</div>
+    <div class="footer-credits"> <span>Designed &amp; Created by <strong>Chaitanya Shelar</strong></span>
+        <span>Developed &amp; Deployed by <strong>Ramzan Khan</strong></span> </div>
+    <div class="footer-copyright"> © 2026 Universal Filter Designer. All rights reserved. </div>
+</footer>
 </html>
