@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Conjugate-Aware Filter Designer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-red: #f43f5e;
+            --accent-green: #4ade80;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 5px; font-size: 1.8rem; text-align: center; }
+        p.subtitle { color: var(--text-muted); margin-top: 0; margin-bottom: 25px; text-align: center; }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1150px;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .panel h2 { font-size: 1.2rem; margin-top: 0; color: var(--accent-blue); }
+
+        canvas {
+            background-color: #0b0f19;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+            cursor: grab;
+        }
+        canvas:active { cursor: grabbing; }
+
+        .controls {
+            margin-top: 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .preset-group {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background-color: #334155;
+            color: var(--text-main);
+            border: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover { background-color: #475569; transform: translateY(-1px); }
+        button.active { background-color: var(--accent-blue); color: #0f172a; }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-blue);
+        }
+
+        .stats {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: #0b0f19;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+
+        /* Root Editor Panels */
+        .editor-box {
+            grid-column: 1 / -1;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .editor-box h3 { margin-top: 0; color: var(--accent-blue); font-size: 1.1rem; }
+
+        .gain-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .gain-row input {
+            background: #0b0f19;
+            color: var(--accent-green);
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            width: 80px;
+            text-align: center;
+        }
+
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 700px) {
+            .editor-grid { grid-template-columns: 1fr; }
+        }
+        .coord-list {
+            background: #0b0f19;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .coord-item {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .coord-item input {
+            background: #1e293b;
+            color: var(--accent-blue);
+            border: 1px solid #475569;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-danger { background-color: #991b1b; }
+        .btn-danger:hover { background-color: #b91c1c; }
+
+        .coeff-box {
+            grid-column: 1 / -1;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .coeff-box h3 { margin-top: 0; color: var(--accent-green); font-size: 1.1rem; }
+        .coeff-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 700px) {
+            .coeff-grid { grid-template-columns: 1fr; }
+        }
+        .coeff-display-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .coeff-display {
+            background: #0b0f19;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #38bdf8;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border: 1px solid #334155;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .btn-copy {
+            background-color: #0f172a;
+            border: 1px solid #475569;
+            color: var(--accent-blue);
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            align-self: flex-start;
+        }
+        .btn-copy:hover {
+            background-color: #334155;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Universal Conjugate-Aware Filter Designer</h1>
+    <p class="subtitle">Dynamic Pole-Zero Management with Gain Control & MATLAB Precision.</p>
+
+    <div class="container">
+        <!-- Left Panel: Pole-Zero Map -->
+        <div class="panel">
+            <h2>Complex Plane</h2>
+            <canvas id="pzCanvas" width="400" height="400"></canvas>
+            <div class="stats" id="pzStats">
+                Test Point Theta: 0.00 rad<br>
+                Magnitude Response: 1.00
+            </div>
+        </div>
+
+        <!-- Right Panel: Magnitude Response Curve -->
+        <div class="panel">
+            <h2>Magnitude Response (-pi to pi)</h2>
+            <canvas id="frCanvas" width="400" height="400"></canvas>
+            <div class="controls">
+                <div class="preset-group">
+                    <button onclick="setPreset('lpf_3p2z')" id="btn-lpf_3p2z" class="active">LPF (3P, 2Z)</button>
+                    <button onclick="setPreset('bpf_2p3z')" id="btn-bpf_2p3z">BPF (2P, 3Z)</button>
+                    <button onclick="setPreset('hpf_3p3z')" id="btn-hpf_3p3z">HPF (3P, 3Z)</button>
+                </div>
+                <div class="slider-group">
+                    <label>Sweep Theta:</label>
+                    <input type="range" id="thetaSlider" min="-3.14159" max="3.14159" step="0.01" value="0" oninput="onSliderMove(this.value)">
+                </div>
+                <button onclick="toggleAnimate()" id="animBtn" style="background-color: #1e3a8a;">Auto-Play Sweep</button>
+            </div>
+        </div>
+
+        <!-- Root Editor with Gain Control -->
+        <div class="editor-box" id="editorBoxContainer">
+            <h3>Manual Root Management (Add / Remove / Edit)</h3>
+
+            <div class="gain-row">
+                <label for="gainInput">System Gain (k):</label>
+                <input type="text" id="gainInput" value="1.00" onchange="updateGainFromInput(this.value)">
+            </div>
+
+            <div class="editor-grid">
+                <!-- Poles Control -->
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); font-weight:bold;">Poles Manager:</label>
+                    <div class="coord-list" id="poleEditorList"></div>
+                    <div class="btn-row">
+                        <button type="button" onclick="addRoot('poles', 'real')">+ Add Real Pole</button>
+                        <button type="button" onclick="addRoot('poles', 'pair')">+ Add Complex Pair</button>
+                    </div>
+                </div>
+                <!-- Zeros Control -->
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-muted); font-weight:bold;">Zeros Manager:</label>
+                    <div class="coord-list" id="zeroEditorList"></div>
+                    <div class="btn-row">
+                        <button type="button" onclick="addRoot('zeros', 'real')">+ Add Real Zero</button>
+                        <button type="button" onclick="addRoot('zeros', 'pair')">+ Add Complex Pair</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel: MATLAB Coefficients -->
+        <div class="coeff-box">
+            <h3>Generated MATLAB / Python Coefficients (Real Polynomial Expansion)</h3>
+            <div class="coeff-grid">
+                <div class="coeff-display-wrapper">
+                    <label style="font-size: 0.85rem; color: var(--text-muted);">Numerator Coefficients (b):</label>
+                    <div class="coeff-display" id="bCoeffs">[1, 0, 1]</div>
+                    <button type="button" class="btn-copy" onclick="copyCoeffs('bCoeffs', this)">📋 Copy Numerator Array</button>
+                </div>
+                <div class="coeff-display-wrapper">
+                    <label style="font-size: 0.85rem; color: var(--text-muted);">Denominator Coefficients (a):</label>
+                    <div class="coeff-display" id="aCoeffs">[1, 0, 0]</div>
+                    <button type="button" class="btn-copy" onclick="copyCoeffs('aCoeffs', this)">📋 Copy Denominator Array</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let system = {
+        gain: 1.0,
+        poles: [
+            { type: 'real', val: 0.5 },
+            { type: 'pair', r: 0.7, phi: 0.4 }
+        ],
+        zeros: [
+            { type: 'real', val: 1.0 },
+            { type: 'real', val: -1.0 }
+        ]
+    };
+
+    let currentTheta = 0;
+    let isAnimating = false;
+    let animId = null;
+    let dragged = null;
+
+    const pzCanvas = document.getElementById('pzCanvas');
+    const pzCtx = pzCanvas.getContext('2d');
+    const frCanvas = document.getElementById('frCanvas');
+    const frCtx = frCanvas.getContext('2d');
+
+    const scale = 150;
+    const pzCenter = { x: 200, y: 200 };
+
+    function setPreset(type) {
+        document.querySelectorAll('.preset-group button').forEach(b => b.classList.remove('active'));
+        let btn = document.getElementById('btn-' + type);
+        if(btn) btn.classList.add('active');
+
+        if (type === 'lpf_3p2z') {
+            system.gain = 1.0;
+            system.poles = [{ type: 'real', val: 0.6 }, { type: 'pair', r: 0.8, phi: 0.3 }];
+            system.zeros = [{ type: 'pair', r: 1.0, phi: Math.PI }];
+        } else if (type === 'bpf_2p3z') {
+            system.gain = 1.0;
+            system.poles = [{ type: 'pair', r: 0.8, phi: Math.PI / 2 }];
+            system.zeros = [{ type: 'real', val: -1.0 }, { type: 'pair', r: 1.0, phi: Math.PI / 3 }];
+        } else if (type === 'hpf_3p3z') {
+            system.gain = 1.0;
+            system.poles = [{ type: 'real', val: -0.6 }, { type: 'pair', r: 0.8, phi: Math.PI - 0.4 }];
+            system.zeros = [{ type: 'real', val: 1.0 }, { type: 'pair', r: 1.0, phi: 0.2 }];
+        }
+        document.getElementById('gainInput').value = system.gain.toFixed(2);
+        updateDrawings();
+    }
+
+    function addRoot(typeName, subType) {
+        document.querySelectorAll('.preset-group button').forEach(b => b.classList.remove('active'));
+        if (subType === 'real') {
+            system[typeName].push({ type: 'real', val: 0.0 });
+        } else {
+            system[typeName].push({ type: 'pair', r: 0.5, phi: Math.PI / 4 });
+        }
+        updateDrawings();
+    }
+
+    function updateGainFromInput(val) {
+        let parsed = parseFloat(val);
+        if (!isNaN(parsed)) {
+            system.gain = parsed;
+            updateDrawings();
+        }
+    }
+
+    function copyCoeffs(elementId, btnElement) {
+        let textToCopy = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            let originalText = btnElement.textContent;
+            btnElement.textContent = "✅ Copied!";
+            btnElement.style.color = "var(--accent-green)";
+            setTimeout(() => {
+                btnElement.textContent = originalText;
+                btnElement.style.color = "var(--accent-blue)";
+            }, 1500);
+        });
+    }
+
+    // Direct deletion listener via mousedown for immediate execution
+    document.getElementById('editorBoxContainer').addEventListener('mousedown', function(e) {
+        if (e.target && e.target.classList.contains('del-btn')) {
+            e.preventDefault();
+            let typeName = e.target.getAttribute('data-type');
+            let index = parseInt(e.target.getAttribute('data-index'));
+            if (!isNaN(index)) {
+                document.querySelectorAll('.preset-group button').forEach(b => b.classList.remove('active'));
+                system[typeName].splice(index, 1);
+                updateDrawings();
+            }
+        }
+    });
+
+    function updateEditorUI() {
+        let activeInput = document.activeElement;
+        if (activeInput && activeInput.tagName === 'INPUT' && activeInput.classList.contains('root-input')) {
+            return;
+        }
+
+        let buildListHtml = (items, typeName) => {
+            let html = '';
+            items.forEach((item, idx) => {
+                let labelPrefix = (typeName === 'poles' ? 'P' : 'Z') + (idx + 1);
+                if (item.type === 'real') {
+                    html += `
+                        <div class="coord-item">
+                            <span style="width:45px;">${labelPrefix}:</span>
+                            <input type="text" data-type="${typeName}" data-index="${idx}" data-field="realVal" value="${item.val.toFixed(4)}" style="width:75px;" class="root-input">
+                            <span style="font-size:0.75rem;">(Real)</span>
+                            <button type="button" class="btn-danger del-btn" data-type="${typeName}" data-index="${idx}" style="padding: 2px 8px; font-size: 0.75rem; margin-left:auto;">✕</button>
+                        </div>`;
+                } else {
+                    let x = item.r * Math.cos(item.phi);
+                    let y = item.r * Math.sin(item.phi);
+                    html += `
+                        <div class="coord-item">
+                            <span style="width:45px;">${labelPrefix}:</span>
+                            <input type="text" data-type="${typeName}" data-index="${idx}" data-field="pairX" value="${x.toFixed(4)}" style="width:65px;" class="root-input"> +
+                            <input type="text" data-type="${typeName}" data-index="${idx}" data-field="pairY" value="${y.toFixed(4)}" style="width:65px;" class="root-input">j
+                            <button type="button" class="btn-danger del-btn" data-type="${typeName}" data-index="${idx}" style="padding: 2px 8px; font-size: 0.75rem; margin-left:auto;">✕</button>
+                        </div>`;
+                }
+            });
+            return html || `<span style="color:var(--text-muted); font-size:0.8rem;">No ${typeName} added. Click a button below.</span>`;
+        };
+
+        document.getElementById('poleEditorList').innerHTML = buildListHtml(system.poles, 'poles');
+        document.getElementById('zeroEditorList').innerHTML = buildListHtml(system.zeros, 'zeros');
+    }
+
+    document.getElementById('editorBoxContainer').addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('root-input')) {
+            let typeName = e.target.getAttribute('data-type');
+            let index = parseInt(e.target.getAttribute('data-index'));
+            let fieldType = e.target.getAttribute('data-field');
+            let val = parseFloat(e.target.value);
+
+            if (!isNaN(index) && !isNaN(val)) {
+                let item = system[typeName][index];
+                if (fieldType === 'realVal') {
+                    item.val = val;
+                } else if (fieldType === 'pairX' || fieldType === 'pairY') {
+                    let x = item.r * Math.cos(item.phi);
+                    let y = item.r * Math.sin(item.phi);
+
+                    if (fieldType === 'pairX') x = val;
+                    if (fieldType === 'pairY') y = val;
+
+                    let absY = Math.abs(y);
+                    if (absY < 0.0001) absY = 0.0001;
+                    let r = Math.hypot(x, absY);
+                    let phi = Math.atan2(absY, x);
+
+                    item.r = r;
+                    item.phi = Math.max(0, Math.min(Math.PI, phi));
+                }
+                updateDrawings();
+            }
+        }
+    });
+
+    function polyMultiply(A, B) {
+        let res = new Array(A.length + B.length - 1).fill(0);
+        for (let i = 0; i < A.length; i++) {
+            for (let j = 0; j < B.length; j++) {
+                res[i + j] += A[i] * B[j];
+            }
+        }
+        return res;
+    }
+
+    function getPolynomialCoeffs(group, multiplier = 1.0) {
+        let poly = [1];
+        for (let item of group) {
+            if (item.type === 'real') {
+                poly = polyMultiply(poly, [1, -item.val]);
+            } else {
+                let B = 2 * item.r * Math.cos(item.phi);
+                let C = item.r * item.r;
+                poly = polyMultiply(poly, [1, -B, C]);
+            }
+        }
+        return poly.map(c => Number((c * multiplier).toFixed(4)));
+    }
+
+    function updateCoefficientsDisplay() {
+        let b = getPolynomialCoeffs(system.zeros, system.gain);
+        let a = getPolynomialCoeffs(system.poles, 1.0);
+
+        document.getElementById('bCoeffs').textContent = `[${b.join(', ')}]`;
+        document.getElementById('aCoeffs').textContent = `[${a.join(', ')}]`;
+    }
+
+    function calculateResponse(theta) {
+        let prodZ = system.gain;
+        for (let item of system.zeros) {
+            if (item.type === 'real') {
+                prodZ *= Math.sqrt(1 + item.val*item.val - 2 * item.val * Math.cos(theta));
+            } else {
+                let d1 = Math.sqrt(1 + item.r*item.r - 2 * item.r * Math.cos(theta - item.phi));
+                let d2 = Math.sqrt(1 + item.r*item.r - 2 * item.r * Math.cos(theta + item.phi));
+                prodZ *= (d1 * d2);
+            }
+        }
+
+        let prodP = 1;
+        for (let item of system.poles) {
+            if (item.type === 'real') {
+                prodP *= Math.sqrt(1 + item.val*item.val - 2 * item.val * Math.cos(theta));
+            } else {
+                let d1 = Math.sqrt(1 + item.r*item.r - 2 * item.r * Math.cos(theta - item.phi));
+                let d2 = Math.sqrt(1 + item.r*item.r - 2 * item.r * Math.cos(theta + item.phi));
+                prodP *= (d1 * d2);
+            }
+        }
+
+        return prodP === 0 ? 20 : prodZ / prodP;
+    }
+
+    function drawPZMap() {
+        pzCtx.clearRect(0, 0, pzCanvas.width, pzCanvas.height);
+
+        pzCtx.strokeStyle = '#334155';
+        pzCtx.lineWidth = 1;
+        pzCtx.beginPath();
+        pzCtx.moveTo(0, pzCenter.y); pzCtx.lineTo(400, pzCenter.y);
+        pzCtx.moveTo(pzCenter.x, 0); pzCtx.lineTo(pzCenter.x, 400);
+        pzCtx.stroke();
+
+        pzCtx.strokeStyle = '#475569';
+        pzCtx.setLineDash([4, 4]);
+        pzCtx.beginPath();
+        pzCtx.arc(pzCenter.x, pzCenter.y, scale, 0, 2 * Math.PI);
+        pzCtx.stroke();
+        pzCtx.setLineDash([]);
+
+        let tx = pzCenter.x + scale * Math.cos(currentTheta);
+        let ty = pzCenter.y - scale * Math.sin(currentTheta);
+
+        pzCtx.lineWidth = 2;
+        system.zeros.forEach((item, i) => {
+            pzCtx.strokeStyle = (dragged && dragged.type === 'zero' && dragged.index === i) ? '#ffffff' : '#f43f5e';
+            if (item.type === 'real') {
+                let zx = pzCenter.x + scale * item.val;
+                let zy = pzCenter.y;
+                pzCtx.beginPath(); pzCtx.arc(zx, zy, 7, 0, 2 * Math.PI); pzCtx.stroke();
+            } else {
+                let zx = pzCenter.x + scale * item.r * Math.cos(item.phi);
+                let zy1 = pzCenter.y - scale * item.r * Math.sin(item.phi);
+                let zy2 = pzCenter.y + scale * item.r * Math.sin(item.phi);
+                pzCtx.beginPath(); pzCtx.arc(zx, zy1, 7, 0, 2 * Math.PI); pzCtx.stroke();
+                pzCtx.beginPath(); pzCtx.arc(zx, zy2, 7, 0, 2 * Math.PI); pzCtx.stroke();
+            }
+        });
+
+        system.poles.forEach((item, i) => {
+            pzCtx.strokeStyle = (dragged && dragged.type === 'pole' && dragged.index === i) ? '#ffffff' : '#38bdf8';
+            if (item.type === 'real') {
+                let px = pzCenter.x + scale * item.val;
+                let py = pzCenter.y;
+                pzCtx.beginPath();
+                pzCtx.moveTo(px - 6, py - 6); pzCtx.lineTo(px + 6, py + 6);
+                pzCtx.moveTo(px + 6, py - 6); pzCtx.lineTo(px - 6, py + 6);
+                pzCtx.stroke();
+            } else {
+                let px = pzCenter.x + scale * item.r * Math.cos(item.phi);
+                let py1 = pzCenter.y - scale * item.r * Math.sin(item.phi);
+                let py2 = pzCenter.y + scale * item.r * Math.sin(item.phi);
+                pzCtx.beginPath();
+                pzCtx.moveTo(px - 6, py1 - 6); pzCtx.lineTo(px + 6, py1 + 6);
+                pzCtx.moveTo(px + 6, py1 - 6); pzCtx.lineTo(px - 6, py1 + 6);
+                pzCtx.moveTo(px - 6, py2 - 6); pzCtx.lineTo(px + 6, py2 + 6);
+                pzCtx.moveTo(px + 6, py2 - 6); pzCtx.lineTo(px - 6, py2 + 6);
+                pzCtx.stroke();
+            }
+        });
+
+        pzCtx.fillStyle = '#4ade80';
+        pzCtx.beginPath();
+        pzCtx.arc(tx, ty, 6, 0, 2 * Math.PI);
+        pzCtx.fill();
+    }
+
+    function drawMagnitudeResponse() {
+        frCtx.clearRect(0, 0, frCanvas.width, frCanvas.height);
+
+        frCtx.strokeStyle = '#1e293b';
+        frCtx.lineWidth = 1;
+        for (let i = 1; i < 4; i++) {
+            frCtx.beginPath();
+            frCtx.moveTo(0, i * 100); frCtx.lineTo(400, i * 100);
+            frCtx.stroke();
+        }
+
+        let points = [];
+        let maxVal = 0.0001;
+        const steps = 200;
+        const minTheta = -Math.PI;
+        const maxTheta = Math.PI;
+
+        for (let i = 0; i <= steps; i++) {
+            let theta = minTheta + (i / steps) * (maxTheta - minTheta);
+            let val = calculateResponse(theta);
+            if (val > maxVal) maxVal = val;
+            points.push({ theta, val });
+        }
+
+        const heightScale = 320 / Math.max(maxVal, 2.0);
+
+        frCtx.strokeStyle = '#38bdf8';
+        frCtx.lineWidth = 3;
+        frCtx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+            let x = (i / steps) * 400;
+            let y = 360 - (points[i].val * heightScale);
+            if (i === 0) frCtx.moveTo(x, y);
+            else frCtx.lineTo(x, y);
+        }
+        frCtx.stroke();
+
+        let normalizedTheta = currentTheta;
+        if (normalizedTheta > Math.PI) normalizedTheta -= 2 * Math.PI;
+        let markerX = ((normalizedTheta - (-Math.PI)) / (2 * Math.PI)) * 400;
+        let currentVal = calculateResponse(currentTheta);
+        let markerY = 360 - (currentVal * heightScale);
+
+        frCtx.fillStyle = '#4ade80';
+        frCtx.beginPath();
+        frCtx.arc(markerX, markerY, 6, 0, 2 * Math.PI);
+        frCtx.fill();
+
+        document.getElementById('pzStats').innerHTML = `
+            Test Point Theta: ${normalizedTheta.toFixed(2)} rad (${(normalizedTheta * 180 / Math.PI).toFixed(1)}°)<br>
+            Magnitude Response: ${currentVal.toFixed(3)}
+        `;
+    }
+
+    function updateDrawings() {
+        drawPZMap();
+        drawMagnitudeResponse();
+        updateCoefficientsDisplay();
+        updateEditorUI();
+    }
+
+    pzCanvas.addEventListener('mousedown', (e) => {
+        const rect = pzCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        for (let i = 0; i < system.zeros.length; i++) {
+            let item = system.zeros[i];
+            if (item.type === 'real') {
+                let zx = pzCenter.x + scale * item.val;
+                let zy = pzCenter.y;
+                if (Math.hypot(mx - zx, my - zy) < 18) {
+                    dragged = { type: 'zero', index: i };
+                    return;
+                }
+            } else {
+                let zx = pzCenter.x + scale * item.r * Math.cos(item.phi);
+                let zy1 = pzCenter.y - scale * item.r * Math.sin(item.phi);
+                let zy2 = pzCenter.y + scale * item.r * Math.sin(item.phi);
+                if (Math.hypot(mx - zx, my - zy1) < 18 || Math.hypot(mx - zx, my - zy2) < 18) {
+                    dragged = { type: 'zero', index: i };
+                    return;
+                }
+            }
+        }
+
+        for (let i = 0; i < system.poles.length; i++) {
+            let item = system.poles[i];
+            if (item.type === 'real') {
+                let px = pzCenter.x + scale * item.val;
+                let py = pzCenter.y;
+                if (Math.hypot(mx - px, my - py) < 18) {
+                    dragged = { type: 'pole', index: i };
+                    return;
+                }
+            } else {
+                let px = pzCenter.x + scale * item.r * Math.cos(item.phi);
+                let py1 = pzCenter.y - scale * item.r * Math.sin(item.phi);
+                let py2 = pzCenter.y + scale * item.r * Math.sin(item.phi);
+                if (Math.hypot(mx - px, my - py1) < 18 || Math.hypot(mx - px, my - py2) < 18) {
+                    dragged = { type: 'pole', index: i };
+                    return;
+                }
+            }
+        }
+
+        const x = mx - pzCenter.x;
+        const y = pzCenter.y - my;
+        currentTheta = Math.atan2(y, x);
+        if (currentTheta < 0) currentTheta += 2 * Math.PI;
+        document.getElementById('thetaSlider').value = currentTheta;
+        updateDrawings();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!dragged) return;
+        const rect = pzCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        const x = (mx - pzCenter.x) / scale;
+        const y = (pzCenter.y - my) / scale;
+
+        let item = system[dragged.type + 's'][dragged.index];
+        if (item.type === 'real') {
+            let limit = dragged.type === 'pole' ? 0.98 : 1.5;
+            item.val = Math.max(-limit, Math.min(limit, x));
+        } else {
+            let r = Math.hypot(x, y);
+            let limit = dragged.type === 'pole' ? 0.98 : 1.5;
+            if (r > limit) r = limit;
+            let phi = Math.atan2(Math.abs(y), x);
+            item.r = r;
+            item.phi = Math.max(0, Math.min(Math.PI, phi));
+        }
+        updateDrawings();
+    });
+
+    window.addEventListener('mouseup', () => {
+        dragged = null;
+        updateDrawings();
+    });
+
+    function onSliderMove(val) {
+        currentTheta = parseFloat(val);
+        if (currentTheta < 0) currentTheta += 2 * Math.PI;
+        updateDrawings();
+    }
+
+    function toggleAnimate() {
+        isAnimating = !isAnimating;
+        const btn = document.getElementById('animBtn');
+        if (isAnimating) {
+            btn.textContent = "Pause Sweep";
+            btn.style.backgroundColor = "#991b1b";
+            runAnimation();
+        } else {
+            btn.textContent = "Auto-Play Sweep";
+            btn.style.backgroundColor = "#1e3a8a";
+            cancelAnimationFrame(animId);
+        }
+    }
+
+    function runAnimation() {
+        if (!isAnimating) return;
+        currentTheta += 0.03;
+        if (currentTheta > 2 * Math.PI) currentTheta = 0;
+
+        let sliderVal = currentTheta;
+        if (sliderVal > Math.PI) sliderVal -= 2 * Math.PI;
+        document.getElementById('thetaSlider').value = sliderVal;
+
+        updateDrawings();
+        animId = requestAnimationFrame(runAnimation);
+    }
+
+    setPreset('lpf_3p2z');
+</script>
+
+</body>
+</html>
