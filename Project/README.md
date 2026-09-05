@@ -2,7 +2,14 @@
 
 A modern, interactive web application for designing and analyzing digital filters through pole-zero placement on the complex plane.
 
-## Overview
+This is the **React + Vite + Tailwind CSS** version. See the [main README](../README.md) for an overview of both versions, or the [Sample/](../Sample/) folder for the original HTML implementation.
+
+## Live Links
+
+| Description | Link |
+|-------------|------|
+| **Live Demo** | [https://pole-zero-analysis.vercel.app/](https://pole-zero-analysis.vercel.app/) |
+| **GitHub Folder** | [https://github.com/RamzanKhansLab/pole-zero-analysis/tree/main/Project](https://github.com/RamzanKhansLab/pole-zero-analysis/tree/main/Project) |
 
 This application provides a comprehensive environment for digital signal processing education and filter design. Users can interactively place poles and zeros on the complex plane, visualize the resulting frequency response, and export filter coefficients in multiple formats.
 
